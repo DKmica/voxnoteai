@@ -25,8 +25,7 @@ export function SwipeableNoteRow({
 }) {
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  const lastRef = useRef<{ x: number; y: number } | null>(null);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
 
   const action = useMemo(() => {
     if (dx > 64) return "favorite" as const;
@@ -34,13 +33,14 @@ export function SwipeableNoteRow({
     return null;
   }, [dx]);
 
+  const progress = Math.min(1, Math.abs(dx) / 96);
+
   useEffect(() => {
     if (selectionMode) {
-      // Don’t keep swipe state while selecting.
+      // Don't keep swipe state while selecting.
       setDx(0);
       setDragging(false);
       startRef.current = null;
-      lastRef.current = null;
     }
   }, [selectionMode]);
 
@@ -48,13 +48,11 @@ export function SwipeableNoteRow({
     if (selectionMode) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDragging(true);
-    startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
-    lastRef.current = { x: e.clientX, y: e.clientY };
+    startRef.current = { x: e.clientX, y: e.clientY };
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging || !startRef.current) return;
-    lastRef.current = { x: e.clientX, y: e.clientY };
 
     const raw = e.clientX - startRef.current.x;
     // If user is scrolling vertically, avoid hijacking.
@@ -62,7 +60,7 @@ export function SwipeableNoteRow({
     const vx = Math.abs(raw);
     if (vy > 16 && vy > vx) return;
 
-    const clamped = Math.max(-96, Math.min(96, raw));
+    const clamped = Math.max(-104, Math.min(104, raw));
     setDx(clamped);
   }
 
@@ -70,8 +68,9 @@ export function SwipeableNoteRow({
     const a = action;
     setDragging(false);
     startRef.current = null;
-    lastRef.current = null;
-    setDx(0);
+
+    // Snap back with a tiny delay so the user sees the action confirm.
+    setTimeout(() => setDx(0), 40);
 
     if (a === "favorite") onToggleFavorite();
     if (a === "delete") onDelete();
@@ -86,28 +85,44 @@ export function SwipeableNoteRow({
     <div className="relative">
       {/* Background actions */}
       <div className="absolute inset-0 flex items-stretch justify-between overflow-hidden rounded-3xl">
-        <div
-          className={cn(
-            "flex w-24 items-center justify-center rounded-3xl",
-            note.isFavorite ? "bg-muted/50" : "bg-primary/12"
-          )}
-        >
-          <Star
-            className={cn(
-              "h-5 w-5",
-              note.isFavorite ? "fill-primary text-primary" : "text-primary"
-            )}
-          />
+        <div className="flex w-28 items-center justify-center rounded-3xl bg-primary/10">
+          <div className="flex items-center gap-2">
+            <Star
+              className={cn(
+                "h-5 w-5 transition",
+                note.isFavorite ? "fill-primary text-primary" : "text-primary"
+              )}
+              style={{ transform: `scale(${0.92 + progress * 0.16})` }}
+            />
+            <span
+              className="text-xs font-semibold text-primary"
+              style={{ opacity: Math.max(0.35, progress) }}
+            >
+              Favorite
+            </span>
+          </div>
         </div>
-        <div className="flex w-24 items-center justify-center rounded-3xl bg-destructive/12">
-          <Trash2 className="h-5 w-5 text-destructive" />
+
+        <div className="flex w-28 items-center justify-center rounded-3xl bg-destructive/10">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-semibold text-destructive"
+              style={{ opacity: Math.max(0.35, progress) }}
+            >
+              Delete
+            </span>
+            <Trash2
+              className="h-5 w-5 text-destructive"
+              style={{ transform: `scale(${0.92 + progress * 0.16})` }}
+            />
+          </div>
         </div>
       </div>
 
       <div
         className={cn(
-          "relative transition",
-          dragging ? "transition-none" : "transition-transform duration-200 ease-out"
+          "relative",
+          dragging ? "transition-none" : "transition-transform duration-250 ease-out"
         )}
         style={{ transform: `translateX(${dx}px)` }}
         onPointerDown={onPointerDown}
@@ -124,10 +139,10 @@ export function SwipeableNoteRow({
       >
         <Card
           className={cn(
-            "rounded-3xl border-border/60 bg-card/80 p-4 shadow-sm transition hover:bg-card",
-            selectionMode && selected
-              ? "ring-2 ring-primary/35"
-              : "ring-0"
+            "vox-card p-4 transition",
+            "hover:bg-card",
+            selectionMode && selected ? "ring-2 ring-primary/35" : "ring-0",
+            !selectionMode ? "active:scale-[0.995]" : ""
           )}
         >
           <div className="flex items-start justify-between gap-3">

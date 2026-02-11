@@ -116,4 +116,63 @@
   .vox-focus {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-primary/30;
   }
+
+  .vox-no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .vox-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  @keyframes vox-dot {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.65;
+    }
+    50% {
+      transform: scale(1.18);
+      opacity: 1;
+    }
+  }
+
+  @keyframes vox-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scale(1.06);
+      opacity: 0.95;
+    }
+  }
+
+  @keyframes vox-wave {
+    0%,
+    100% {
+      transform: scaleY(0.78);
+      opacity: 0.35;
+    }
+    50% {
+      transform: scaleY(1.18);
+      opacity: 0.7;
+    }
+  }
+
+  .vox-dot {
+    animation: vox-dot 1.25s ease-in-out infinite;
+  }
+
+  .vox-breathe {
+    animation: vox-breathe 1.55s ease-in-out infinite;
+  }
+
+  .vox-wavebar {
+    transform-origin: bottom;
+    animation: vox-wave 1.25s ease-in-out infinite;
+  }
 }

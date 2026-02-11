@@ -16,11 +16,18 @@ export function WaveformBars({
       {bars.map((i) => {
         const base = 0.18 + (i % 6) * 0.06;
         const h = Math.min(1, base + clamped * 1.4);
+        const delay = (i % 8) * 90;
+        const alpha = 0.18 + clamped * 0.55;
+
         return (
           <div
             key={i}
-            className="w-1.5 rounded-full bg-primary/20"
-            style={{ height: `${Math.round(h * 52)}px` }}
+            className="vox-wavebar w-1.5 rounded-full bg-primary"
+            style={{
+              height: `${Math.round(h * 52)}px`,
+              animationDelay: `${delay}ms`,
+              opacity: alpha,
+            }}
           />
         );
       })}
