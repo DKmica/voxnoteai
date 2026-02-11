@@ -4,15 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { brand } from "@/config/brand";
 import { useAppState } from "@/state/AppStateProvider";
 import { aiKeys } from "@/services/ai/AiService";
 import { listTranscriptionProviders } from "@/services/transcription/providerRegistry";
+import { EntitlementsService } from "@/services/entitlements/EntitlementsService";
 import { CreditCard, KeyRound, Shield, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProfilePage() {
   const { preferences, setPreferences } = useAppState();
@@ -20,6 +28,15 @@ export default function ProfilePage() {
 
   const providers = useMemo(() => listTranscriptionProviders(), []);
   const [openAiKey, setOpenAiKey] = useState(() => aiKeys.getOpenAiKey() ?? "");
+
+  const entitlementsQuery = useQuery({
+    queryKey: ["entitlements"],
+    queryFn: () => EntitlementsService.ensureFresh(),
+    refetchInterval: 2500,
+  });
+
+  const minutesUsed = entitlementsQuery.data?.minutesUsedThisMonth ?? 0;
+  const cardsUsed = entitlementsQuery.data?.momentCardsUsedThisMonth ?? 0;
 
   return (
     <Screen>
@@ -30,7 +47,10 @@ export default function ProfilePage() {
           <div>
             <div className="text-sm font-semibold tracking-tight">Usage</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Minutes used this month • 0 / {brand.limits.freeMinutesPerMonth}
+              Minutes used this month • {minutesUsed} / {brand.limits.freeMinutesPerMonth}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Moment Cards • {cardsUsed} / {brand.limits.freeMomentCardsPerMonth}
             </div>
           </div>
           <div className="rounded-2xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
@@ -66,9 +86,7 @@ export default function ProfilePage() {
             </div>
             <Switch
               checked={preferences.aiTrainingOptOut}
-              onCheckedChange={(v) =>
-                setPreferences({ ...preferences, aiTrainingOptOut: v })
-              }
+              onCheckedChange={(v) => setPreferences({ ...preferences, aiTrainingOptOut: v })}
             />
           </div>
         </div>
@@ -139,6 +157,7 @@ export default function ProfilePage() {
                 className="h-11 rounded-2xl"
                 onClick={() => {
                   aiKeys.setOpenAiKey(openAiKey.trim());
+                  entitlementsQuery.refetch();
                 }}
               >
                 Save key

@@ -1,8 +1,11 @@
 import { notesRepository } from "@/data/notesRepository";
+import { embeddingsRepository } from "@/data/embeddingsRepository";
 import { loadPreferences } from "@/state/preferences";
 import { getTranscriptionProvider } from "@/services/transcription/providerRegistry";
+import { getSummarizationProvider } from "@/services/summarization/providerRegistry";
+import { getEmbeddingProvider } from "@/services/embeddings/providerRegistry";
 
-export type JobType = "TRANSCRIBE_NOTE";
+export type JobType = "TRANSCRIBE_NOTE" | "SUMMARIZE_NOTE" | "EMBED_NOTE";
 
 export type Job = {
   id: string;
@@ -33,7 +36,7 @@ function saveJobs(jobs: Job[]) {
 }
 
 function uuid() {
-  return (typeof crypto !== "undefined" && "randomUUID" in crypto)
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Math.random().toString(16).slice(2)}-${Date.now()}`;
 }
@@ -61,6 +64,24 @@ async function execute(job: Job) {
     if (!audio) throw new Error("Audio blob missing.");
 
     const prefs = loadPreferences();
+
+    // Soft paywall: block additional cloud transcription after free minutes are used.
+    const { EntitlementsService } = await import(
+      "@/services/entitlements/EntitlementsService"
+    );
+    const allowed = await EntitlementsService.canConsumeTranscription(note.durationMs);
+    if (!allowed) {
+      await notesRepository.update({
+        ...note,
+        updatedAt: now(),
+        processingStatus: "FAILED",
+        errorMessage:
+          "Free transcription minutes limit reached. Upgrade to Pro to continue.",
+      });
+      return;
+    }
+    await EntitlementsService.consumeTranscription(note.durationMs);
+
     const provider = getTranscriptionProvider(prefs.transcriptionProvider);
     const result = await provider.transcribeAudioBlob(audio);
 
@@ -72,6 +93,8 @@ async function execute(job: Job) {
       language: result.language,
       errorMessage: undefined,
     });
+
+    jobQueue.enqueueSummarization(note.id);
 
     if (prefs.notificationsEnabled && "Notification" in window) {
       try {
@@ -85,6 +108,57 @@ async function execute(job: Job) {
         // ignore
       }
     }
+  }
+
+  if (job.type === "SUMMARIZE_NOTE") {
+    const note = await notesRepository.get(job.noteId);
+    if (!note) return;
+    if (!note.transcriptText) throw new Error("Transcript missing.");
+
+    await notesRepository.update({
+      ...note,
+      updatedAt: now(),
+      processingStatus: "SUMMARIZING",
+      errorMessage: undefined,
+    });
+
+    const provider = getSummarizationProvider();
+    const s = await provider.summarizeTranscript(note.transcriptText);
+
+    await notesRepository.update({
+      ...note,
+      updatedAt: now(),
+      processingStatus: "READY",
+      titleText: s.title,
+      summaryText: s.summary,
+      keyPoints: s.key_points,
+      actionItems: s.action_items,
+      tags: s.tags,
+      type: s.type,
+      errorMessage: undefined,
+    });
+
+    jobQueue.enqueueEmbedding(note.id);
+  }
+
+  if (job.type === "EMBED_NOTE") {
+    const note = await notesRepository.get(job.noteId);
+    if (!note) return;
+
+    const text = [note.titleText, note.summaryText, note.transcriptText]
+      .filter(Boolean)
+      .join("\n\n");
+    if (!text.trim()) return;
+
+    const provider = getEmbeddingProvider();
+    const embedded = await provider.embedText(text);
+
+    await embeddingsRepository.put({
+      noteId: note.id,
+      vector: embedded.vector,
+      modelName: embedded.modelName,
+      createdAt: now(),
+    });
   }
 }
 
@@ -116,7 +190,33 @@ export const jobQueue = {
     const jobs = loadJobs();
     // de-dupe
     if (jobs.some((j) => j.type === "TRANSCRIBE_NOTE" && j.noteId === noteId)) return;
-    jobs.push({ id: uuid(), type: "TRANSCRIBE_NOTE", noteId, attempt: 0, runAt: now() + 250 });
+    jobs.push({
+      id: uuid(),
+      type: "TRANSCRIBE_NOTE",
+      noteId,
+      attempt: 0,
+      runAt: now() + 250,
+    });
+    saveJobs(jobs);
+  },
+
+  enqueueSummarization(noteId: string) {
+    const jobs = loadJobs();
+    if (jobs.some((j) => j.type === "SUMMARIZE_NOTE" && j.noteId === noteId)) return;
+    jobs.push({
+      id: uuid(),
+      type: "SUMMARIZE_NOTE",
+      noteId,
+      attempt: 0,
+      runAt: now() + 350,
+    });
+    saveJobs(jobs);
+  },
+
+  enqueueEmbedding(noteId: string) {
+    const jobs = loadJobs();
+    if (jobs.some((j) => j.type === "EMBED_NOTE" && j.noteId === noteId)) return;
+    jobs.push({ id: uuid(), type: "EMBED_NOTE", noteId, attempt: 0, runAt: now() + 350 });
     saveJobs(jobs);
   },
 
@@ -141,23 +241,27 @@ export const jobQueue = {
           const nextAttempt = due.attempt + 1;
           const nextRunAt = now() + backoffMs(nextAttempt);
 
-          // Mark note as failed after a few tries
-          if (nextAttempt >= 5) {
+          // Mark note as failed after a few tries (only for processing jobs)
+          if (nextAttempt >= 5 && due.type !== "EMBED_NOTE") {
             const note = await notesRepository.get(due.noteId);
             if (note) {
               await notesRepository.update({
                 ...note,
                 updatedAt: now(),
                 processingStatus: "FAILED",
-                errorMessage:
-                  e instanceof Error ? e.message : "Processing failed.",
+                errorMessage: e instanceof Error ? e.message : "Processing failed.",
               });
             }
+            saveJobs(jobs.filter((j) => j.id !== due.id));
+          } else if (nextAttempt >= 5 && due.type === "EMBED_NOTE") {
+            // Embeddings are non-critical; drop after retries.
             saveJobs(jobs.filter((j) => j.id !== due.id));
           } else {
             saveJobs(
               jobs.map((j) =>
-                j.id === due.id ? { ...j, attempt: nextAttempt, runAt: nextRunAt } : j
+                j.id === due.id
+                  ? { ...j, attempt: nextAttempt, runAt: nextRunAt }
+                  : j
               )
             );
           }
