@@ -25,7 +25,7 @@ import { notesRepository } from "@/data/notesRepository";
 import { embeddingsRepository } from "@/data/embeddingsRepository";
 import type { Note, NoteType } from "@/domain/models";
 import { getEmbeddingProvider } from "@/services/embeddings/providerRegistry";
-import { cosineSimilarity } from "@/utils/vector";
+import { rankNotesByEmbeddings } from "@/features/search/rank";
 import { formatShortDate } from "@/utils/format";
 import { useAppState } from "@/state/AppStateProvider";
 import { Calendar, Filter, MessageSquare, Search, Sparkles, Star } from "lucide-react";
@@ -71,11 +71,7 @@ function keywordScore(query: string, note: Note) {
 }
 
 function snippet(note: Note) {
-  return (
-    note.summaryText ??
-    note.transcriptText?.slice(0, 140) ??
-    "Processing…"
-  );
+  return note.summaryText ?? note.transcriptText?.slice(0, 140) ?? "Processing…";
 }
 
 export default function SearchPage() {
@@ -130,15 +126,19 @@ export default function SearchPage() {
         const provider = getEmbeddingProvider();
         const qEmb = await provider.embedText(q);
         const embeddings = await embeddingsRepository.list();
-        const embById = new Map(embeddings.map((e) => [e.noteId, e]));
 
-        const scored: Scored[] = filteredNotes
-          .map((n) => {
-            const e = embById.get(n.id);
-            const semantic = e ? cosineSimilarity(qEmb.vector, e.vector) : 0;
-            const keyword = keywordScore(q, n);
+        const ranked = rankNotesByEmbeddings({
+          queryVector: qEmb.vector,
+          notes: filteredNotes,
+          embeddings,
+          topK: 60,
+        });
+
+        const scored: Scored[] = ranked
+          .map(({ note, semantic }) => {
+            const keyword = keywordScore(q, note);
             const score = semantic * 0.78 + keyword * 0.22;
-            return { note: n, score, semantic, keyword };
+            return { note, score, semantic, keyword };
           })
           .filter((r) => r.score > 0.08)
           .sort((a, b) => b.score - a.score)
@@ -281,9 +281,7 @@ export default function SearchPage() {
                 <div className="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3">
                   <div>
                     <div className="text-sm font-semibold">Favorites only</div>
-                    <div className="text-xs text-muted-foreground">
-                      Show starred notes.
-                    </div>
+                    <div className="text-xs text-muted-foreground">Show starred notes.</div>
                   </div>
                   <Checkbox
                     checked={filters.favoritesOnly}
@@ -312,9 +310,7 @@ export default function SearchPage() {
             <Sparkles className="h-3.5 w-3.5" />
             Semantic
           </Badge>
-          <Badge variant="secondary" className="rounded-full">
-            Keyword fallback
-          </Badge>
+          <Badge variant="secondary" className="rounded-full">Keyword fallback</Badge>
           {featureFlags.globalChat ? (
             <Button
               variant="secondary"

@@ -113,7 +113,6 @@ async function execute(job: Job) {
   if (job.type === "SUMMARIZE_NOTE") {
     const note = await notesRepository.get(job.noteId);
     if (!note) return;
-    if (!note.transcriptText) throw new Error("Transcript missing.");
 
     await notesRepository.update({
       ...note,
@@ -123,18 +122,14 @@ async function execute(job: Job) {
     });
 
     const provider = getSummarizationProvider();
-    const s = await provider.summarizeTranscript(note.transcriptText);
+    const { runSummarization } = await import("@/background/pipeline");
+    const fields = await runSummarization({ note, summarizer: provider });
 
     await notesRepository.update({
       ...note,
+      ...fields,
       updatedAt: now(),
       processingStatus: "READY",
-      titleText: s.title,
-      summaryText: s.summary,
-      keyPoints: s.key_points,
-      actionItems: s.action_items,
-      tags: s.tags,
-      type: s.type,
       errorMessage: undefined,
     });
 
@@ -145,13 +140,10 @@ async function execute(job: Job) {
     const note = await notesRepository.get(job.noteId);
     if (!note) return;
 
-    const text = [note.titleText, note.summaryText, note.transcriptText]
-      .filter(Boolean)
-      .join("\n\n");
-    if (!text.trim()) return;
-
     const provider = getEmbeddingProvider();
-    const embedded = await provider.embedText(text);
+    const { runEmbedding } = await import("@/background/pipeline");
+    const embedded = await runEmbedding({ note, embedder: provider });
+    if (!embedded) return;
 
     await embeddingsRepository.put({
       noteId: note.id,
@@ -160,6 +152,7 @@ async function execute(job: Job) {
       createdAt: now(),
     });
   }
+
 }
 
 function acquireLock(): boolean {
