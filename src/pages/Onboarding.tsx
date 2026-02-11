@@ -6,7 +6,7 @@ import { brand } from "@/config/brand";
 import { strings } from "@/config/strings";
 import { useAppState } from "@/state/AppStateProvider";
 import { Bell, ExternalLink, Lock, Mic } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 type Step = 0 | 1 | 2;
@@ -16,6 +16,44 @@ export default function Onboarding() {
   const { preferences, setPreferences } = useAppState();
   const [step, setStep] = useState<Step>(0);
   const [micGranted, setMicGranted] = useState<boolean>(false);
+
+  const requestMicrophonePermission = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicGranted(true);
+      return true;
+    } catch {
+      setMicGranted(false);
+      return false;
+    }
+  }, []);
+
+  const requestNotificationsPermission = useCallback(async () => {
+    if (!("Notification" in window)) {
+      setPreferences({ ...preferences, notificationsEnabled: false });
+      return false;
+    }
+
+    try {
+      const res = await Notification.requestPermission();
+      const granted = res === "granted";
+      setPreferences({ ...preferences, notificationsEnabled: granted });
+      return granted;
+    } catch {
+      setPreferences({ ...preferences, notificationsEnabled: false });
+      return false;
+    }
+  }, [preferences, setPreferences]);
+
+  const requestAllPermissions = useCallback(async () => {
+    const micOk = await requestMicrophonePermission();
+    await requestNotificationsPermission();
+
+    if (!micOk) {
+      return;
+    }
+  }, [requestMicrophonePermission, requestNotificationsPermission]);
 
   const steps = useMemo(
     () =>
@@ -109,14 +147,7 @@ export default function Onboarding() {
                   <Button
                     variant={micGranted ? "secondary" : "default"}
                     className="rounded-2xl"
-                    onClick={async () => {
-                      try {
-                        await navigator.mediaDevices.getUserMedia({ audio: true });
-                        setMicGranted(true);
-                      } catch {
-                        setMicGranted(false);
-                      }
-                    }}
+                    onClick={requestMicrophonePermission}
                   >
                     {micGranted ? "Granted" : "Grant"}
                   </Button>
@@ -130,22 +161,15 @@ export default function Onboarding() {
                   <Button
                     variant="secondary"
                     className="rounded-2xl"
-                    onClick={async () => {
-                      if (!("Notification" in window)) return;
-                      try {
-                        const res = await Notification.requestPermission();
-                        setPreferences({
-                          ...preferences,
-                          notificationsEnabled: res === "granted",
-                        });
-                      } catch {
-                        setPreferences({ ...preferences, notificationsEnabled: false });
-                      }
-                    }}
+                    onClick={requestNotificationsPermission}
                   >
                     {preferences.notificationsEnabled ? "Enabled" : "Enable"}
                   </Button>
                 </div>
+
+                <Button className="w-full rounded-2xl" onClick={requestAllPermissions}>
+                  Enable all permissions
+                </Button>
 
                 <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                   <div className="text-sm font-semibold">Optional: get an AI key</div>
@@ -176,7 +200,14 @@ export default function Onboarding() {
           ),
         },
       ] as const,
-    [preferences, setPreferences, micGranted]
+    [
+      micGranted,
+      preferences,
+      requestAllPermissions,
+      requestMicrophonePermission,
+      requestNotificationsPermission,
+      setPreferences,
+    ]
   );
 
   const { icon: Icon, title, body, visual } = steps[step];
