@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { jobQueue } from "@/background/jobQueue";
 import { notesRepository } from "@/data/notesRepository";
+import { EntitlementsService } from "@/services/entitlements/EntitlementsService";
 import type { Note } from "@/domain/models";
 import { WaveformBars } from "@/features/recording/WaveformBars";
 import { useRecorder } from "@/features/recording/useRecorder";
@@ -32,7 +33,7 @@ function createEmptyNote(params: {
     actionItems: [],
     tags: [],
     isFavorite: false,
-    processingStatus: "TRANSCRIBING",
+    processingStatus: "RECORDED",
   };
 }
 
@@ -107,7 +108,9 @@ export default function RecordPage() {
             <Button
               variant="secondary"
               className="h-12 rounded-2xl justify-center gap-2"
-              onClick={() => (recorder.status === "paused" ? recorder.resume() : recorder.pause())}
+              onClick={() =>
+                recorder.status === "paused" ? recorder.resume() : recorder.pause()
+              }
               disabled={!recorder.supportsPause}
             >
               {recorder.status === "paused" ? (
@@ -132,9 +135,28 @@ export default function RecordPage() {
                     durationMs: recorder.elapsedMs,
                   });
                   await notesRepository.create(note, blob);
-                  jobQueue.enqueueTranscription(note.id);
+
+                  const allowed = await EntitlementsService.canConsumeTranscription(
+                    note.durationMs
+                  );
+                  if (allowed) {
+                    jobQueue.enqueueTranscription(note.id);
+                    toast.success("Saved. Processing runs in the background.");
+                  } else {
+                    await notesRepository.update({
+                      ...note,
+                      updatedAt: Date.now(),
+                      processingStatus: "FAILED",
+                      errorMessage:
+                        "Free transcription minutes limit reached. Upgrade to Pro to continue.",
+                    });
+                    toast.message("Saved.", {
+                      description:
+                        "Upgrade to Pro to transcribe and summarize this recording.",
+                    });
+                  }
+
                   await queryClient.invalidateQueries({ queryKey: ["notes"] });
-                  toast.success("Saved. Transcription is running in the background.");
                   navigate(`/note/${note.id}`);
                 } catch {
                   toast.error("Couldn't save recording.");
@@ -206,12 +228,30 @@ export default function RecordPage() {
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+
                 const audioBlobId = uuid();
                 const note = createEmptyNote({ audioBlobId, durationMs: 0 });
                 await notesRepository.create(note, file);
-                jobQueue.enqueueTranscription(note.id);
+
+                const allowed = await EntitlementsService.canConsumeTranscription(0);
+                if (allowed) {
+                  jobQueue.enqueueTranscription(note.id);
+                  toast.success("Audio imported. Processing runs in the background.");
+                } else {
+                  await notesRepository.update({
+                    ...note,
+                    updatedAt: Date.now(),
+                    processingStatus: "FAILED",
+                    errorMessage:
+                      "Free transcription minutes limit reached. Upgrade to Pro to continue.",
+                  });
+                  toast.message("Imported.", {
+                    description:
+                      "Upgrade to Pro to transcribe and summarize this audio.",
+                  });
+                }
+
                 await queryClient.invalidateQueries({ queryKey: ["notes"] });
-                toast.success("Audio imported. Transcription is running in the background.");
                 navigate(`/note/${note.id}`);
               }}
             />

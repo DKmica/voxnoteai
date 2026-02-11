@@ -105,6 +105,14 @@ export const voxnoteDb = {
     if (!row) return undefined;
     return { ...row, vector: new Float32Array(row.vector) };
   },
+  async listEmbeddings(): Promise<Embedding[]> {
+    const rows = (await withStore(
+      "embeddings",
+      "readonly",
+      (s) => s.getAll()
+    )) as (Omit<Embedding, "vector"> & { vector: number[] })[];
+    return rows.map((r) => ({ ...r, vector: new Float32Array(r.vector) }));
+  },
 
   async putMomentCard(c: MomentCard) {
     await withStoreVoid("momentCards", "readwrite", (s) => s.put(c));
@@ -115,7 +123,12 @@ export const voxnoteDb = {
       "readonly",
       (s) => s.getAll()
     )) as MomentCard[];
-    return all.filter((c) => c.noteId === noteId).sort((a, b) => b.createdAt - a.createdAt);
+    return all
+      .filter((c) => c.noteId === noteId)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  },
+  async deleteMomentCard(id: string) {
+    await withStoreVoid("momentCards", "readwrite", (s) => s.delete(id));
   },
 
   async getEntitlements(): Promise<UserEntitlements | undefined> {

@@ -14,6 +14,7 @@ import ProfilePage from "@/pages/Profile";
 import PaywallPage from "@/pages/Paywall";
 import PrivacyPage from "@/pages/Privacy";
 import NoteDetailPage from "@/pages/NoteDetail";
+import ChatPage from "@/pages/Chat";
 import { AppStateProvider, useAppState } from "@/state/AppStateProvider";
 import { BackgroundJobsBootstrap } from "@/background/BackgroundJobsBootstrap";
 
@@ -47,6 +48,7 @@ const App = () => (
             </Route>
 
             <Route path="/note/:noteId" element={<NoteDetailPage />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/paywall" element={<PaywallPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
 
