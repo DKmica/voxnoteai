@@ -1,8 +1,8 @@
 export const brand = {
-  appName: "VoxNote AI", // placeholder
-  packageName: "com.voxnote.ai", // placeholder
+  appName: "VoxNote AI",
+  packageName: "com.voxnote.ai",
   tagline: "Voice notes that think with you.",
-  supportEmail: "support@example.com", // placeholder
+  supportEmail: "support@voxnote.ai",
   limits: {
     freeMinutesPerMonth: 15,
     freeMomentCardsPerMonth: 5,
@@ -12,7 +12,7 @@ export const brand = {
     yearlyId: "voxnote_pro_yearly",
   },
   links: {
-    privacyPolicy: "#", // placeholder
+    privacyPolicy: "https://voxnote.ai/privacy",
     googleAiStudio: "https://aistudio.google.com/",
     googleAiStudioApiKeys: "https://aistudio.google.com/app/apikey",
   },

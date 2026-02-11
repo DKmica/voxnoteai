@@ -234,7 +234,7 @@ export default function Onboarding() {
             </Button>
           </div>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            By continuing you agree to a placeholder Privacy Policy.
+            By continuing you agree to the Privacy Policy.
           </p>
         </div>
       </div>

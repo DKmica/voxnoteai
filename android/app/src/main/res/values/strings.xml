@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">emerald-sloth-dive</string>
-    <string name="title_activity_main">emerald-sloth-dive</string>
-    <string name="package_name">com.example.emeraldslothdive</string>
-    <string name="custom_url_scheme">com.example.emeraldslothdive</string>
+    <string name="app_name">VoxNote AI</string>
+    <string name="title_activity_main">VoxNote AI</string>
+    <string name="package_name">com.voxnote.ai</string>
+    <string name="custom_url_scheme">com.voxnote.ai</string>
 </resources>

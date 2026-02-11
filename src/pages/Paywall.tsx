@@ -49,7 +49,7 @@ export default function PaywallPage() {
         </div>
 
         <div className="mt-5 rounded-2xl bg-muted/50 p-4 text-xs text-muted-foreground">
-          Product IDs (placeholders): {brand.proProducts.monthlyId}, {brand.proProducts.yearlyId}
+          Google Play product IDs: {brand.proProducts.monthlyId}, {brand.proProducts.yearlyId}
         </div>
 
         <div className="mt-5 grid gap-3">

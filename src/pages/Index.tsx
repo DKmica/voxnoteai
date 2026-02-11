@@ -32,7 +32,7 @@ const Index = () => {
         </Button>
 
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Placeholder branding — swap colors/strings in one place.
+          Built for fast mobile capture, summaries, and follow-up actions.
         </p>
       </div>
     </div>
