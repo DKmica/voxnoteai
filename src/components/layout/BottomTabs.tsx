@@ -13,7 +13,7 @@ const tabs = [
 export function BottomTabs() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50">
-      <div className="pointer-events-none mx-auto w-full max-w-md px-4 pb-4">
+      <div className="pointer-events-none mx-auto w-full max-w-md px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <div className="pointer-events-auto rounded-[28px] border border-border/60 bg-background/80 p-2 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="grid grid-cols-4 gap-1">
             {tabs.map(({ to, label, Icon }) => (

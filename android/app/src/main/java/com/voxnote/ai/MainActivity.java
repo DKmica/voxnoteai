@@ -1,4 +1,4 @@
-package com.example.emeraldslothdive;
+package com.voxnote.ai;
 
 import com.getcapacitor.BridgeActivity;
 
