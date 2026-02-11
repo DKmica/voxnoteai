@@ -21,6 +21,7 @@ import { aiKeyring } from "@/services/ai/keyring";
 import type { AiRequestMeta } from "@/services/ai/AiService";
 import {
   CreditCard,
+  ExternalLink,
   KeyRound,
   Plus,
   Shield,
@@ -198,6 +199,31 @@ export default function ProfilePage() {
           </div>
           <div className="text-sm text-muted-foreground">
             Add multiple OpenAI-compatible keys (and optional base URLs), then choose which key to use per AI feature.
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
+            <div className="text-sm font-semibold tracking-tight">Need a key?</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Create projects and API keys in Google AI Studio.
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={brand.links.googleAiStudio}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-background px-3 text-sm font-semibold text-foreground shadow-sm hover:bg-muted/40"
+              >
+                Google AI Studio <ExternalLink className="h-4 w-4" />
+              </a>
+              <a
+                href={brand.links.googleAiStudioApiKeys}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-background px-3 text-sm font-semibold text-foreground shadow-sm hover:bg-muted/40"
+              >
+                API keys <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
           </div>
 
           <Separator className="my-5" />

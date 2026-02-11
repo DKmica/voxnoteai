@@ -13,5 +13,7 @@ export const brand = {
   },
   links: {
     privacyPolicy: "#", // placeholder
+    googleAiStudio: "https://aistudio.google.com/",
+    googleAiStudioApiKeys: "https://aistudio.google.com/app/apikey",
   },
 } as const;
