@@ -187,7 +187,7 @@ export default function ProfilePage() {
 
           <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
             <Sparkles className="h-4 w-4" />
-            {brand.appName} is a placeholder brand — swap colors/strings in one place.
+            {brand.appName} settings apply instantly across the app and Android build.
           </div>
         </Card>
 

@@ -23,6 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppState } from "@/state/AppStateProvider";
+import { Capacitor } from "@capacitor/core";
 import { notesRepository } from "@/data/notesRepository";
 import { momentCardsRepository } from "@/data/momentCardsRepository";
 import { jobQueue } from "@/background/jobQueue";
@@ -108,6 +109,20 @@ function downloadText(filename: string, text: string, mime = "text/plain") {
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 250);
+}
+
+function openPrintableNoteHtml(title: string, markdownText: string) {
+  const w = window.open("", "_blank");
+  if (!w) return false;
+  w.document.write(
+    `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;max-width:780px;margin:40px auto;line-height:1.45;color:#111827}h1{font-size:28px}h2{margin-top:22px}</style>
+    </head><body><pre style="white-space:pre-wrap">${escapeHtml(markdownText)}</pre></body></html>`
+  );
+  w.document.close();
+  w.focus();
+  w.print();
+  return true;
 }
 
 function MomentCardThumb({
@@ -668,23 +683,25 @@ export default function NoteDetailPage() {
                     <Button
                       variant="secondary"
                       className="h-11 rounded-2xl justify-start gap-2"
-                      onClick={() => {
-                        // Best-effort "PDF" via print-to-PDF.
-                        const w = window.open("", "_blank");
-                        if (!w) return;
-                        w.document.write(
-                          `<!doctype html><html><head><meta charset="utf-8"><title>${note.titleText ?? "Note"}</title>
-                          <style>body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;max-width:780px;margin:40px auto;line-height:1.45;color:#111827}h1{font-size:28px}h2{margin-top:22px}</style>
-                          </head><body><pre style="white-space:pre-wrap">${escapeHtml(
-                            toMd(note)
-                          )}</pre></body></html>`
+                      onClick={async () => {
+                        const markdown = toMd(note);
+                        if (Capacitor.isNativePlatform()) {
+                          await shareText(markdown);
+                          toast.success("Shared note text for PDF/save in your target app.");
+                          return;
+                        }
+
+                        const opened = openPrintableNoteHtml(
+                          note.titleText ?? "Note",
+                          markdown
                         );
-                        w.document.close();
-                        w.focus();
-                        w.print();
+                        if (!opened) {
+                          await shareText(markdown);
+                        }
                       }}
                     >
-                      <FileText className="h-4 w-4" /> PDF (print)
+                      <FileText className="h-4 w-4" />
+                      {Capacitor.isNativePlatform() ? "Share for PDF" : "PDF (print)"}
                     </Button>
                   </div>
                 </DialogContent>

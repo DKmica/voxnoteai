@@ -11,7 +11,9 @@ export function Screen({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-md px-4 pb-28 pt-5",
+        "mx-auto w-full max-w-md px-4 pt-5",
+        "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
+        "pt-[calc(1.25rem+env(safe-area-inset-top,0px))]",
         "[text-wrap:pretty]",
         className
       )}

@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Onboarding from "@/pages/Onboarding";
@@ -20,6 +21,7 @@ import { BackgroundJobsBootstrap } from "@/background/BackgroundJobsBootstrap";
 import { AppBackdrop } from "@/components/visuals/AppBackdrop";
 
 const queryClient = new QueryClient();
+const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter;
 
 function AppGate() {
   const { preferences } = useAppState();
@@ -35,7 +37,7 @@ const App = () => (
       <AppStateProvider>
         <BackgroundJobsBootstrap />
         <AppBackdrop />
-        <BrowserRouter>
+        <Router>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/start" element={<AppGate />} />
@@ -57,7 +59,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
       </AppStateProvider>
     </TooltipProvider>
   </QueryClientProvider>

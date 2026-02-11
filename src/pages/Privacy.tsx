@@ -148,7 +148,7 @@ export default function PrivacyPage() {
         </div>
 
         <div className="mt-4 rounded-2xl bg-muted/50 p-4 text-xs text-muted-foreground">
-          Privacy policy placeholder. Add your real policy before shipping.
+          Privacy policy: review and update the public policy URL before publishing new builds.
         </div>
       </Card>
     </Screen>
