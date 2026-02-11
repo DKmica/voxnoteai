@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { brand } from "@/config/brand";
 import { strings } from "@/config/strings";
 import { useAppState } from "@/state/AppStateProvider";
-import { Bell, Lock, Mic } from "lucide-react";
+import { Bell, ExternalLink, Lock, Mic } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -26,11 +26,16 @@ export default function Onboarding() {
           body: strings.onboarding.valueBody,
           visual: (
             <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5">
-              <div className="flex items-center justify-between">
+              <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+              <div className="absolute -left-16 -bottom-16 h-40 w-40 rounded-full bg-accent/10 blur-2xl" />
+
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-semibold text-muted-foreground">{brand.appName}</div>
+                  <div className="text-xs font-semibold text-muted-foreground">
+                    {brand.appName}
+                  </div>
                   <div className="mt-1 text-lg font-semibold tracking-tight">
-                    Today’s insights, automatically
+                    Today's insights, automatically
                   </div>
                   <div className="mt-2 text-sm text-muted-foreground">
                     Record → transcribe → summarize → organize
@@ -40,7 +45,7 @@ export default function Onboarding() {
                   <Mic className="h-6 w-6" />
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="relative mt-4 grid grid-cols-3 gap-2">
                 {["Summary", "Key points", "Action items"].map((t) => (
                   <div
                     key={t}
@@ -75,7 +80,9 @@ export default function Onboarding() {
               <div className="mt-4 flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3">
                 <div>
                   <div className="text-sm font-semibold">AI training opt-out</div>
-                  <div className="text-xs text-muted-foreground">Adds an opt-out flag to requests when supported.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Adds an opt-out flag to requests when supported.
+                  </div>
                 </div>
                 <Switch
                   checked={preferences.aiTrainingOptOut}
@@ -138,6 +145,31 @@ export default function Onboarding() {
                   >
                     {preferences.notificationsEnabled ? "Enabled" : "Enable"}
                   </Button>
+                </div>
+
+                <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                  <div className="text-sm font-semibold">Optional: get an AI key</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    For cloud transcription, summaries, chat, and embeddings.
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={brand.links.googleAiStudio}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 items-center gap-2 rounded-2xl bg-muted/40 px-3 text-sm font-semibold hover:bg-muted/60"
+                    >
+                      Google AI Studio <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <a
+                      href={brand.links.googleAiStudioApiKeys}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 items-center gap-2 rounded-2xl bg-muted/40 px-3 text-sm font-semibold hover:bg-muted/60"
+                    >
+                      API keys <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

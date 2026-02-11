@@ -17,6 +17,7 @@ import NoteDetailPage from "@/pages/NoteDetail";
 import ChatPage from "@/pages/Chat";
 import { AppStateProvider, useAppState } from "@/state/AppStateProvider";
 import { BackgroundJobsBootstrap } from "@/background/BackgroundJobsBootstrap";
+import { AppBackdrop } from "@/components/visuals/AppBackdrop";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
       <Sonner />
       <AppStateProvider>
         <BackgroundJobsBootstrap />
+        <AppBackdrop />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
