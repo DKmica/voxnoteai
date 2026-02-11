@@ -1,4 +1,5 @@
-import { aiFetch, aiKeys } from "@/services/ai/AiService";
+import { aiFetch, getAiAuth } from "@/services/ai/AiService";
+
 import type {
   MomentCardQuotesJson,
   MomentCardQuotesProvider,
@@ -12,15 +13,16 @@ export class OpenAiMomentCardQuotesProvider implements MomentCardQuotesProvider 
   displayName = "OpenAI";
 
   async extractQuotes(transcript: string): Promise<MomentCardQuotesJson> {
-    const key = aiKeys.getOpenAiKey();
-    if (!key) throw new Error("Missing OpenAI API key.");
+    const { apiKey, baseUrl } = getAiAuth({ purpose: "moment_cards" });
 
     const res = await aiFetch(
-      "https://api.openai.com/v1/chat/completions",
+      `${baseUrl}/v1/chat/completions`,
+
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${key}`,
+          Authorization: `Bearer ${apiKey}`,
+
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -38,7 +40,8 @@ export class OpenAiMomentCardQuotesProvider implements MomentCardQuotesProvider 
           ],
         }),
       },
-      { purpose: "summarization" }
+      { purpose: "moment_cards" }
+
     );
 
     const json = (await res.json()) as {

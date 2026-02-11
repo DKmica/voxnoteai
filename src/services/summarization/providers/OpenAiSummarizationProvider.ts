@@ -1,4 +1,5 @@
-import { aiFetch, aiKeys } from "@/services/ai/AiService";
+import { aiFetch, getAiAuth } from "@/services/ai/AiService";
+
 import type {
   SummarizationJson,
   SummarizationProvider,
@@ -21,15 +22,16 @@ export class OpenAiSummarizationProvider implements SummarizationProvider {
   displayName = "OpenAI Chat Completions";
 
   async summarizeTranscript(transcript: string): Promise<SummarizationJson> {
-    const key = aiKeys.getOpenAiKey();
-    if (!key) throw new Error("Missing OpenAI API key.");
+    const { apiKey, baseUrl } = getAiAuth({ purpose: "summarization" });
 
     const res = await aiFetch(
-      "https://api.openai.com/v1/chat/completions",
+      `${baseUrl}/v1/chat/completions`,
+
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${key}`,
+          Authorization: `Bearer ${apiKey}`,
+
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

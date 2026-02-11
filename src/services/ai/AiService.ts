@@ -1,4 +1,5 @@
 import { loadPreferences } from "@/state/preferences";
+import { aiKeyring } from "@/services/ai/keyring";
 
 export type AiRequestMeta = {
   purpose:
@@ -6,7 +7,8 @@ export type AiRequestMeta = {
     | "summarization"
     | "embedding"
     | "chat_note"
-    | "chat_global";
+    | "chat_global"
+    | "moment_cards";
 };
 
 type RetryOptions = {
@@ -25,9 +27,7 @@ function jitter(ms: number) {
 class RateLimiter {
   private inFlight = 0;
   private lastStartAt = 0;
-  constructor(
-    private opts: { maxConcurrent: number; minSpacingMs: number }
-  ) {}
+  constructor(private opts: { maxConcurrent: number; minSpacingMs: number }) {}
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
     while (this.inFlight >= this.opts.maxConcurrent) {
@@ -50,6 +50,10 @@ class RateLimiter {
 const limiter = new RateLimiter({ maxConcurrent: 2, minSpacingMs: 650 });
 
 export const aiKeys = {
+  /**
+   * Legacy single-key API kept for backward compatibility.
+   * The UI and providers should use the keyring instead.
+   */
   getOpenAiKey(): string | null {
     try {
       return localStorage.getItem("voxnote.openai_api_key");
@@ -64,6 +68,15 @@ export const aiKeys = {
     localStorage.removeItem("voxnote.openai_api_key");
   },
 };
+
+export function getAiAuth(meta: AiRequestMeta): { apiKey: string; baseUrl: string } {
+  const rec = aiKeyring.getKeyFor(meta);
+  if (!rec) throw new Error("Missing AI API key. Add one in Profile.");
+  return {
+    apiKey: rec.apiKey,
+    baseUrl: (rec.baseUrl ?? "https://api.openai.com").replace(/\/+$/, ""),
+  };
+}
 
 export async function aiFetch(
   input: RequestInfo | URL,

@@ -1,4 +1,4 @@
-import { aiFetch, aiKeys } from "@/services/ai/AiService";
+import { aiFetch, getAiAuth } from "@/services/ai/AiService";
 
 export type ChatMode = "note" | "global";
 
@@ -37,8 +37,8 @@ export async function chatWithNotes(params: {
   notes: ChatContextNote[];
   messages: ChatMessage[];
 }): Promise<string> {
-  const key = aiKeys.getOpenAiKey();
-  if (!key) throw new Error("Missing OpenAI API key. Add it in Profile.");
+  const metaPurpose = params.mode === "note" ? "chat_note" : "chat_global";
+  const { apiKey, baseUrl } = getAiAuth({ purpose: metaPurpose });
 
   const context = formatContext(params.notes);
 
@@ -48,11 +48,13 @@ export async function chatWithNotes(params: {
     "Be concise and practical. When useful, reference note titles or ids.";
 
   const res = await aiFetch(
-    "https://api.openai.com/v1/chat/completions",
+    `${baseUrl}/v1/chat/completions`,
+
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${apiKey}`,
+
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -72,7 +74,8 @@ export async function chatWithNotes(params: {
         ],
       }),
     },
-    { purpose: params.mode === "note" ? "chat_note" : "chat_global" }
+    { purpose: metaPurpose }
+
   );
 
   const json = (await res.json()) as {

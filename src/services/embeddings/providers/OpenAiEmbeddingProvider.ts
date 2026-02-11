@@ -1,4 +1,5 @@
-import { aiFetch, aiKeys } from "@/services/ai/AiService";
+import { aiFetch, getAiAuth } from "@/services/ai/AiService";
+
 import type {
   EmbeddingProvider,
   EmbeddingResult,
@@ -9,15 +10,16 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
   displayName = "OpenAI Embeddings";
 
   async embedText(text: string): Promise<EmbeddingResult> {
-    const key = aiKeys.getOpenAiKey();
-    if (!key) throw new Error("Missing OpenAI API key.");
+    const { apiKey, baseUrl } = getAiAuth({ purpose: "embedding" });
 
     const res = await aiFetch(
-      "https://api.openai.com/v1/embeddings",
+      `${baseUrl}/v1/embeddings`,
+
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${key}`,
+          Authorization: `Bearer ${apiKey}`,
+
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

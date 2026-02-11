@@ -121,7 +121,10 @@ export default function PrivacyPage() {
                 [
                   "voxnote.preferences.v1",
                   "voxnote.flags.v1",
-                  "voxnote.openai_api_key",
+                  "voxnote.openai_api_key", // legacy
+                  "voxnote.ai.keys.v1",
+                  "voxnote.ai.defaults.v1",
+
                   "voxnote.jobs.v1",
                   "voxnote.jobs.lock.v1",
                 ].forEach((k) => {

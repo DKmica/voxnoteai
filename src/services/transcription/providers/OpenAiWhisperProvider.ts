@@ -1,4 +1,5 @@
-import { aiFetch, aiKeys } from "@/services/ai/AiService";
+import { aiFetch, getAiAuth } from "@/services/ai/AiService";
+
 import type {
   TranscriptionProvider,
   TranscriptionResult,
@@ -10,19 +11,20 @@ export class OpenAiWhisperProvider implements TranscriptionProvider {
   qualityLabel = "High (cloud)" as const;
 
   async transcribeAudioBlob(audio: Blob): Promise<TranscriptionResult> {
-    const key = aiKeys.getOpenAiKey();
-    if (!key) throw new Error("Missing OpenAI API key.");
+    const { apiKey, baseUrl } = getAiAuth({ purpose: "transcription" });
 
     const form = new FormData();
     form.append("file", audio, "recording.webm");
     form.append("model", "whisper-1");
 
     const res = await aiFetch(
-      "https://api.openai.com/v1/audio/transcriptions",
+      `${baseUrl}/v1/audio/transcriptions`,
+
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${key}`,
+          Authorization: `Bearer ${apiKey}`,
+
         },
         body: form,
       },
